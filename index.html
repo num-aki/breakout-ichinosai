@@ -1,363 +1,409 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8"/>
-  <title>Breakout Game - Ichinosai style</title>
-  <!-- Import Google Fonts for Japanese typography -->
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Breakout – Glass Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    /* Global Styles */
-    body {
-      margin: 0;
-      font-family: 'Noto Sans JP', sans-serif;
-      color: #ddd;
-      background-color: #0d0d0d;
+    :root{
+      --bg:#0b0f14;
+      --ink:#e6f0ff;
+      --muted:#9fb1c9;
+      --accent:#7bcfff;
+      --panel:rgba(255,255,255,.06);
+      --panel-border:rgba(255,255,255,.22);
+      --panel-highlight:rgba(255,255,255,.5);
     }
-    a { color: inherit; text-decoration: none; }
-    /* Header and navigation */
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem 2rem;
-      border-bottom: 1px solid #333;
-      background-color: #0d0d0d;
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: Inter, "Noto Sans JP", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(1200px 800px at 10% -10%, #17314e 0%, transparent 60%),
+        radial-gradient(900px 600px at 110% 20%, #28236a 0%, transparent 65%),
+        radial-gradient(700px 500px at 50% 120%, #0f3a4f 0%, transparent 70%),
+        var(--bg);
+      overflow-x:hidden;
     }
-    header .logo a {
-      font-weight: bold;
-      font-size: 1.2rem;
-      color: #fff;
+    header{
+      position:sticky; top:0; z-index:20;
+      padding:14px 20px;
+      display:flex; align-items:center; justify-content:space-between;
+      backdrop-filter: blur(8px) saturate(160%);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      border-bottom: 1px solid rgba(255,255,255,.18);
     }
-    nav ul {
-      list-style: none;
-      display: flex;
-      gap: 1.5rem;
-      margin: 0;
-      padding: 0;
+    .brand{font-weight:700; letter-spacing:.02em}
+    .brand small{color:var(--muted); font-weight:600}
+    .nav{display:flex; gap:16px; color:var(--muted); font-size:14px}
+    .nav a{color:inherit; text-decoration:none}
+    .container{max-width:1100px; margin:0 auto; padding:20px}
+    .hero{margin:24px auto 10px; padding:12px 0;}
+    .hero h1{margin:0 0 6px; font-weight:800; letter-spacing:.01em}
+    .panel{
+      background: var(--panel);
+      border:1px solid var(--panel-border);
+      border-radius:16px;
+      padding:16px;
+      backdrop-filter: blur(14px) saturate(160%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 20px 60px rgba(0,0,0,.35);
     }
-    nav a {
-      color: #ddd;
-      font-size: 0.9rem;
-      transition: color 0.2s;
+    .layout{
+      display:grid; gap:16px; grid-template-columns:1fr; align-items:start;
     }
-    nav a:hover {
-      color: #fff;
+    @media(min-width:980px){ .layout{grid-template-columns:1fr 320px;} }
+    canvas{
+      width:100%; height:auto; max-height:68vh; display:block;
+      border-radius:14px; background: rgba(12,18,26,.6);
+      border:1px solid rgba(255,255,255,.18);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
+      image-rendering: pixelated; touch-action:none;
     }
-    /* Main content */
-    main {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
+    .caption{color:var(--muted); font-size:12px; text-align:center; margin-top:8px;}
+    .ctrl{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+    .btn{
+      appearance:none; border:1px solid rgba(255,255,255,.22);
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
+      color:var(--ink); height:36px; padding:0 14px; border-radius:999px; cursor:pointer;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 10px 30px rgba(0,0,0,.25);
     }
-    .hero {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-    .hero h1 {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-    }
-    .hero p {
-      font-size: 1rem;
-      color: #999;
-    }
-    .game-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 2rem;
-      width: 100%;
-      max-width: 1000px;
-      justify-content: center;
-    }
-    canvas {
-      border: 1px solid #444;
-      background-color: #111;
-    }
-    /* Sidebar panel */
-    aside {
-      flex: 1;
-      min-width: 200px;
-      background-color: #151515;
-      padding: 1rem;
-      border: 1px solid #444;
-      border-radius: 4px;
-    }
-    aside h2 {
-      margin-top: 0;
-      font-size: 1.2rem;
-    }
-    aside p {
-      margin: 0.5rem 0;
-      font-size: 0.9rem;
-      color: #bbb;
-    }
-    aside input[type="range"] {
-      width: 100%;
-    }
-    /* Footer */
-    footer {
-      margin-top: 3rem;
-      padding: 1rem;
-      text-align: center;
-      font-size: 0.8rem;
-      color: #666;
-      border-top: 1px solid #333;
-    }
-    footer a {
-      color: #666;
-      margin: 0 0.5rem;
-    }
-    footer a:hover {
-      color: #999;
-    }
+    .btn:hover{background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.06));}
+    .pill{border:1px solid rgba(255,255,255,.22); padding:6px 10px; border-radius:999px; color:var(--muted)}
+    label{font-size:13px; color:var(--muted)}
+    input[type="range"]{width:160px}
+    footer{color:var(--muted); font-size:12px; text-align:center; padding:26px 0}
   </style>
 </head>
 <body>
   <header>
-    <div class="logo"><a href="#">Ichinosai</a></div>
-    <nav>
-      <ul>
-        <li><a href="#">Top</a></li>
-        <li><a href="#">Collections</a></li>
-        <li><a href="#">Products</a></li>
-        <li><a href="#">About</a></li>
-        <li><a href="#">Career</a></li>
-        <li><a href="#">Contact</a></li>
-      </ul>
+    <div class="brand">ichinosai <small>glass demo</small></div>
+    <nav class="nav">
+      <a href="#">Top</a><a href="#">Collections</a><a href="#">Products</a><a href="#">About</a>
     </nav>
   </header>
-  <main>
-    <div class="hero">
-      <h1>ブロック崩しゲーム</h1>
-      <p>IchinosaiスタイルのHTMLゲームをお楽しみください</p>
-    </div>
-    <div class="game-container">
-      <canvas id="game" width="900" height="600"></canvas>
-      <aside>
-        <h2>操作説明</h2>
-        <p>← → キーでパドルを移動し、スペースキーで開始・一時停止。</p>
-        <p>速度:<br/><input type="range" id="speed" min="3" max="12" value="6"></p>
-        <p>スコア: <span id="score">0</span></p>
-        <p>レベル: <span id="level">1</span></p>
-        <p>ライフ: <span id="lives">3</span></p>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Breakout – Glass Edition</h1>
+      <div style="color:var(--muted)">ガラスのようなUIと、<b>割れるエフェクト</b>を追加した進化版。</div>
+    </section>
+    <section class="layout">
+      <div class="panel">
+        <canvas id="game" width="900" height="600" aria-label="ブロック崩し（Glass）"></canvas>
+        <p class="caption">← → で移動 / スペースで開始・一時停止・発射。クリックやタッチでもOK。</p>
+      </div>
+      <aside class="panel">
+        <div class="ctrl">
+          <button id="startBtn" class="btn">▶︎ スタート / リスタート</button>
+          <button id="pauseBtn" class="btn">⏸ 一時停止</button>
+          <span class="pill">LEVEL: <b id="lv">1</b></span>
+        </div>
+        <div style="height:12px"></div>
+        <div class="ctrl">
+          <label for="speed">速度</label>
+          <input id="speed" type="range" min="0.6" max="1.8" step="0.05" value="1" />
+          <span id="speedVal" class="pill">1.00x</span>
+        </div>
+        <div style="height:16px"></div>
+        <div style="font-size:13px; color:var(--muted); line-height:1.7">
+          レイアウトは <b>glassmorphism</b>（ぼかし＋透過＋縁ハイライト）を採用。<br>
+          ブロックはヒット時に<b>破片（shards）</b>が飛び散ります。
+        </div>
       </aside>
-    </div>
+    </section>
   </main>
-  <footer>
-    <p><a href="#">プライバシーポリシー</a> | <a href="#">利用規約</a> | &copy; 2025 Ichinosai</p>
-  </footer>
-  <script>
-    // Game configuration and state
-    const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d');
-    const PADDLE = { w: 120, h: 15, x: canvas.width / 2 - 60, y: canvas.height - 30 };
-    const BALL = { r: 8, x: canvas.width / 2, y: canvas.height - 50, dx: 4, dy: -4, speed: 6 };
-    let ROWS = 4;
-    let COLS = 12;
-    const BRICK = { w: (canvas.width - 80) / COLS, h: 20, padding: 5, offsetX: 40, offsetY: 60 };
-    let bricks = [];
-    let score = 0;
-    let level = 1;
-    let lives = 3;
-    let running = false;
-    let leftPressed = false;
-    let rightPressed = false;
 
-    // Initialize bricks matrix
-    function initBricks() {
-      bricks = [];
-      for (let r = 0; r < ROWS; r++) {
-        bricks[r] = [];
-        for (let c = 0; c < COLS; c++) {
-          bricks[r][c] = { x: 0, y: 0, status: 1 };
-        }
-      }
+  <footer>© 2025 ichinosai glass demo</footer>
+
+<script>
+// ====== Breakout (glass UI + shatter effect) ======
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// Walls (inset to look like framed area)
+const WALL = { left: 40, right: W - 40, top: 72, bottom: H - 42 };
+
+// Paddle & ball
+const PADDLE = { w: 132, h: 16, y: H - 60, x: W/2 - 66, speed: 10 };
+const BALL_BASE_SPEED = 6;
+const ball = { x: W/2, y: PADDLE.y - 12, r: 8, vx: 0, vy: 0 };
+
+// Bricks
+const COLS = 12;
+const ROWS_BASE = 6;
+const BRICK_W = 64, BRICK_H = 22, GAP = 6;
+
+// State
+let bricks = [];
+let particles = []; // glass shards
+let score = 0, lives = 3, level = 1;
+let running = false, paused = false, justLaunched = true, timeScale = 1.0;
+const lvEl = document.getElementById('lv');
+
+// Utils
+const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+const rnd = (a,b)=>Math.random()*(b-a)+a;
+
+function glassGradient(x,y,w,h, tint=0.55){
+  const g = ctx.createLinearGradient(x, y, x, y+h);
+  g.addColorStop(0, `rgba(255,255,255,${0.60*tint})`);
+  g.addColorStop(0.5, `rgba(255,255,255,${0.10*tint})`);
+  g.addColorStop(1, `rgba(255,255,255,${0.25*tint})`);
+  return g;
+}
+
+// build level
+function makeLevel(){
+  bricks = [];
+  const rows = ROWS_BASE + Math.floor((level-1)*0.7);
+  const totalW = COLS*BRICK_W + (COLS-1)*GAP;
+  const startX = (W - totalW)/2, startY = WALL.top + 22;
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<COLS;c++){
+      const x = startX + c*(BRICK_W+GAP);
+      const y = startY + r*(BRICK_H+GAP);
+      bricks.push({
+        x, y, w:BRICK_W, h:BRICK_H,
+        hp: 1 + Math.floor(r/2) + Math.floor((level-1)/2),
+        hue: (r*24 + c*8 + level*12) % 360 // subtle tint shift
+      });
     }
-    initBricks();
+  }
+}
 
-    // Draw bricks
-    function drawBricks() {
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          const b = bricks[r][c];
-          if (b.status === 1) {
-            const x = BRICK.offsetX + c * (BRICK.w + BRICK.padding);
-            const y = BRICK.offsetY + r * (BRICK.h + BRICK.padding);
-            bricks[r][c].x = x;
-            bricks[r][c].y = y;
-            // Draw brick base layer
-            ctx.fillStyle = '#444';
-            ctx.fillRect(x, y, BRICK.w, BRICK.h);
-            // Draw brick inner layer for depth effect
-            ctx.fillStyle = '#888';
-            ctx.fillRect(x + 2, y + 2, BRICK.w - 4, BRICK.h - 4);
-          }
-        }
-      }
-    }
+function resetBall(){
+  ball.x = PADDLE.x + PADDLE.w/2;
+  ball.y = PADDLE.y - 12;
+  const angle = (Math.random()*0.5 + 0.25)*Math.PI; // 45-135deg
+  const s = BALL_BASE_SPEED * timeScale;
+  ball.vx = Math.cos(angle)*s*(Math.random()<0.5?-1:1);
+  ball.vy = -Math.abs(Math.sin(angle)*s);
+  justLaunched = true;
+}
 
-    // Draw paddle
-    function drawPaddle() {
-      ctx.fillStyle = '#999';
-      ctx.fillRect(PADDLE.x, PADDLE.y, PADDLE.w, PADDLE.h);
-    }
+function startGame(){ score=0; lives=3; level=1; PADDLE.x = W/2 - PADDLE.w/2; makeLevel(); resetBall(); running=true; paused=false; lvEl.textContent=level; }
+function nextLevel(){ level++; makeLevel(); resetBall(); lvEl.textContent=level; }
 
-    // Draw ball
-    function drawBall() {
-      ctx.beginPath();
-      ctx.arc(BALL.x, BALL.y, BALL.r, 0, Math.PI * 2);
-      ctx.fillStyle = '#fff';
-      ctx.fill();
-      ctx.closePath();
-    }
+// draw
+function drawWalls(){
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,.18)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(WALL.left, WALL.top, WALL.right-WALL.left, WALL.bottom-WALL.top);
+  // top glass highlight
+  const gx = ctx.createLinearGradient(0, WALL.top-10, 0, WALL.top+2);
+  gx.addColorStop(0,'rgba(255,255,255,.35)');
+  gx.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle = gx;
+  ctx.fillRect(WALL.left, WALL.top-10, WALL.right-WALL.left, 10);
+  ctx.restore();
+}
 
-    // Update displayed scores and info
-    function updateInfo() {
-      document.getElementById('score').textContent = score;
-      document.getElementById('level').textContent = level;
-      document.getElementById('lives').textContent = lives;
-    }
+function drawPaddle(){
+  const x=PADDLE.x,y=PADDLE.y,w=PADDLE.w,h=PADDLE.h;
+  ctx.fillStyle = glassGradient(x,y,w,h,0.9);
+  ctx.fillRect(x,y,w,h);
+  // glossy stroke
+  ctx.strokeStyle='rgba(255,255,255,.45)';
+  ctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
+}
 
-    // Collision detection between ball and bricks
-    function collisionDetection() {
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          const b = bricks[r][c];
-          if (b.status === 1) {
-            if (
-              BALL.x > b.x &&
-              BALL.x < b.x + BRICK.w &&
-              BALL.y > b.y &&
-              BALL.y < b.y + BRICK.h
-            ) {
-              BALL.dy = -BALL.dy;
-              b.status = 0;
-              score++;
-              if (score % (ROWS * COLS) === 0) {
-                // Level up when all bricks are destroyed
-                level++;
-                ROWS++;
-                lives++;
-                initBricks();
-                resetBall();
-              }
-            }
-          }
-        }
-      }
-    }
+function drawBall(){
+  const g = ctx.createRadialGradient(ball.x-2,ball.y-2,2, ball.x,ball.y,ball.r+1);
+  g.addColorStop(0,'rgba(255,255,255,.95)');
+  g.addColorStop(1,'rgba(255,255,255,.25)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.stroke();
+}
 
-    // Reset ball position and direction
-    function resetBall() {
-      BALL.x = canvas.width / 2;
-      BALL.y = canvas.height - 50;
-      // Randomize horizontal direction
-      BALL.dx = BALL.speed * (Math.random() > 0.5 ? 1 : -1);
-      BALL.dy = -BALL.speed;
-    }
+function drawBrick(b){
+  ctx.save();
+  // glass body
+  ctx.fillStyle = glassGradient(b.x,b.y,b.w,b.h,0.7);
+  ctx.fillRect(b.x,b.y,b.w,b.h);
+  // subtle tint
+  ctx.fillStyle = `hsla(${b.hue}, 60%, 70%, .12)`;
+  ctx.fillRect(b.x,b.y,b.w,b.h);
+  // stroke
+  ctx.strokeStyle='rgba(255,255,255,.35)';
+  ctx.strokeRect(b.x+0.5,b.y+0.5,b.w-1,b.h-1);
+  // top highlight
+  const hl = ctx.createLinearGradient(b.x,b.y,b.x,b.y+6);
+  hl.addColorStop(0,'rgba(255,255,255,.65)');
+  hl.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle = hl; ctx.fillRect(b.x,b.y,b.w,6);
+  ctx.restore();
+}
 
-    // Update game state
-    function update() {
-      if (!running) return;
-      // Move paddle based on key presses
-      if (rightPressed && PADDLE.x + PADDLE.w < canvas.width) {
-        PADDLE.x += 7;
-      } else if (leftPressed && PADDLE.x > 0) {
-        PADDLE.x -= 7;
-      }
-      // Move ball
-      BALL.x += BALL.dx;
-      BALL.y += BALL.dy;
-      // Wall collisions (left/right)
-      if (BALL.x + BALL.r > canvas.width || BALL.x - BALL.r < 0) {
-        BALL.dx = -BALL.dx;
-      }
-      // Top wall collision
-      if (BALL.y - BALL.r < 0) {
-        BALL.dy = -BALL.dy;
-      }
-      // Paddle collision
-      if (
-        BALL.y + BALL.r > PADDLE.y &&
-        BALL.x > PADDLE.x &&
-        BALL.x < PADDLE.x + PADDLE.w
-      ) {
-        BALL.dy = -BALL.dy;
-        // Change horizontal direction based on where it hits the paddle
-        const deltaX = BALL.x - (PADDLE.x + PADDLE.w / 2);
-        BALL.dx = deltaX * 0.1;
-      }
-      // Bottom collision (lose life)
-      if (BALL.y + BALL.r > canvas.height) {
-        lives--;
-        if (lives <= 0) {
-          running = false;
-          alert('Game Over');
-          document.location.reload();
-        } else {
-          resetBall();
-        }
-      }
-      // Check collisions with bricks
-      collisionDetection();
-    }
+function drawHUD(){
+  ctx.fillStyle='rgba(230,240,255,.9)';
+  ctx.font = '16px Inter, system-ui';
+  ctx.fillText(`SCORE: ${score}`, 48, 40);
+  ctx.fillText(`LIVES: ${lives}`, W/2 - 40, 40);
+  ctx.fillText(`LEVEL: ${level}`, W - 140, 40);
+  if (paused) { ctx.font='bold 36px Inter'; ctx.fillText('PAUSED', W/2 - 70, H/2); }
+  if (!running) { ctx.font='bold 28px Inter'; ctx.fillText('スペース or クリックでスタート', W/2 - 190, H/2 + 40); }
+}
 
-    // Render game elements
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawBricks();
-      drawPaddle();
-      drawBall();
-      updateInfo();
-    }
-
-    // Game loop using requestAnimationFrame
-    function loop() {
-      update();
-      draw();
-      requestAnimationFrame(loop);
-    }
-    loop();
-
-    // Event listeners for keyboard control
-    document.addEventListener('keydown', e => {
-      if (e.key === 'ArrowRight') {
-        rightPressed = true;
-      } else if (e.key === 'ArrowLeft') {
-        leftPressed = true;
-      } else if (e.code === 'Space') {
-        running = !running;
-        // If starting for the first time, reset ball
-        if (running && BALL.y === canvas.height - 50) {
-          resetBall();
-        }
-      }
+// particle system (glass shards)
+function spawnShards(x,y, nx,ny, hue){
+  const count = 14 + Math.floor(Math.random()*10);
+  for(let i=0;i<count;i++){
+    const ang = Math.atan2(ny, nx) + rnd(-1.0, 1.0);
+    const sp = rnd(2.5, 7);
+    particles.push({
+      x, y,
+      vx: Math.cos(ang)*sp,
+      vy: Math.sin(ang)*sp - rnd(0,1.2),
+      r: rnd(1.2, 3.0),
+      life: rnd(28, 55),
+      hue,
+      rot: rnd(0, Math.PI*2),
+      vr: rnd(-0.2,0.2)
     });
-    document.addEventListener('keyup', e => {
-      if (e.key === 'ArrowRight') {
-        rightPressed = false;
-      } else if (e.key === 'ArrowLeft') {
-        leftPressed = false;
-      }
-    });
-    // Mouse move controls for paddle
-    document.addEventListener('mousemove', e => {
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      if (x > 0 && x < canvas.width) {
-        PADDLE.x = x - PADDLE.w / 2;
-      }
-    });
-    // Slider to adjust ball speed
-    document.getElementById('speed').addEventListener('input', e => {
-      const val = parseFloat(e.target.value);
-      BALL.speed = val;
-      // Normalize direction vector and apply new speed
-      const magnitude = Math.sqrt(BALL.dx * BALL.dx + BALL.dy * BALL.dy);
-      BALL.dx = (BALL.dx / magnitude) * val;
-      BALL.dy = (BALL.dy / magnitude) * val;
-    });
-  </script>
+  }
+}
+
+function updateParticles(){
+  for (const p of particles){
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.08; // gravity
+    p.rot += p.vr;
+    p.life -= 1;
+  }
+  particles = particles.filter(p=>p.life>0);
+}
+
+function drawParticles(){
+  ctx.save();
+  for(const p of particles){
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.fillStyle = `hsla(${p.hue}, 70%, 80%, ${Math.max(0, p.life/55)})`;
+    ctx.beginPath();
+    ctx.moveTo(-p.r, -p.r*0.6);
+    ctx.lineTo(p.r*1.2, -p.r*0.2);
+    ctx.lineTo(-p.r*0.2, p.r*1.1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.setTransform(1,0,0,1,0,0);
+  }
+  ctx.restore();
+}
+
+// game loop helpers
+function update(dt){
+  if (!running || paused) return;
+
+  if (keys.has('ArrowLeft')) PADDLE.x -= PADDLE.speed * dt * 60;
+  if (keys.has('ArrowRight')) PADDLE.x += PADDLE.speed * dt * 60;
+  PADDLE.x = clamp(PADDLE.x, WALL.left, WALL.right - PADDLE.w);
+
+  if (justLaunched){
+    ball.x = clamp(PADDLE.x + PADDLE.w/2, WALL.left + ball.r, WALL.right - ball.r);
+    ball.y = PADDLE.y - 12;
+  } else {
+    ball.x += ball.vx * dt * 60;
+    ball.y += ball.vy * dt * 60;
+  }
+
+  // walls
+  if (ball.x - ball.r < WALL.left){ ball.x = WALL.left + ball.r; ball.vx *= -1; }
+  if (ball.x + ball.r > WALL.right){ ball.x = WALL.right - ball.r; ball.vx *= -1; }
+  if (ball.y - ball.r < WALL.top){ ball.y = WALL.top + ball.r; ball.vy *= -1; }
+
+  // paddle
+  if (ball.y + ball.r >= PADDLE.y && ball.y - ball.r <= PADDLE.y + PADDLE.h &&
+      ball.x >= PADDLE.x && ball.x <= PADDLE.x + PADDLE.w && ball.vy > 0){
+    ball.y = PADDLE.y - ball.r;
+    const hit = (ball.x - (PADDLE.x + PADDLE.w/2)) / (PADDLE.w/2);
+    const speed = Math.hypot(ball.vx, ball.vy) * 1.02;
+    const angle = (-Math.PI/3) * hit;
+    ball.vx = speed * Math.sin(angle);
+    ball.vy = -Math.abs(speed * Math.cos(angle));
+  }
+
+  // bottom
+  if (ball.y - ball.r > WALL.bottom){
+    lives--;
+    if (lives <= 0){ running=false; } else { resetBall(); }
+  }
+
+  // bricks
+  for (const b of bricks){
+    if (b.hp<=0) continue;
+    const nx = clamp(ball.x, b.x, b.x + b.w);
+    const ny = clamp(ball.y, b.y, b.y + b.h);
+    const dx = ball.x - nx, dy = ball.y - ny;
+    if (dx*dx + dy*dy <= ball.r*ball.r){
+      // reflect
+      if (Math.abs(dx) > Math.abs(dy)) ball.vx *= -1;
+      else if (Math.abs(dy) > Math.abs(dx)) ball.vy *= -1;
+      else { ball.vx *= -1; ball.vy *= -1; }
+      b.hp--; score += 10;
+      spawnShards(nx, ny, dx, dy, b.hue);
+      if (bricks.every(bb => bb.hp<=0)) nextLevel();
+      break;
+    }
+  }
+
+  updateParticles();
+}
+
+function render(){
+  ctx.clearRect(0,0,W,H);
+  drawWalls();
+  // bricks
+  for (const b of bricks){ if (b.hp>0) drawBrick(b); }
+  drawParticles();
+  drawPaddle();
+  drawBall();
+  drawHUD();
+
+  if (!running){
+    ctx.fillStyle='#fff'; ctx.font='bold 40px Inter';
+    const msg = (lives<=0) ? 'GAME OVER' : 'READY?';
+    const w = ctx.measureText(msg).width;
+    ctx.fillText(msg, (W-w)/2, H/2 - 20);
+  }
+}
+
+let last = 0;
+function loop(ms){ const dt = Math.min(0.033, (ms-last)/1000); last = ms; update(dt); render(); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+
+// input
+let keys = new Set();
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space'){
+    if (!running) startGame();
+    else { if (justLaunched) { justLaunched=false; } else { paused = !paused; } }
+    e.preventDefault();
+  }
+  keys.add(e.key);
+});
+window.addEventListener('keyup', e => keys.delete(e.key));
+
+function toCanvasX(clientX){ const r=canvas.getBoundingClientRect(); const s=canvas.width/r.width; return (clientX-r.left)*s; }
+canvas.addEventListener('pointermove', e => { const x = toCanvasX(e.clientX) - PADDLE.w/2; PADDLE.x = clamp(x, WALL.left, WALL.right - PADDLE.w); });
+canvas.addEventListener('pointerdown', e => { if (!running) startGame(); else if (justLaunched) justLaunched=false; });
+
+// UI
+document.getElementById('startBtn').addEventListener('click', ()=> startGame());
+document.getElementById('pauseBtn').addEventListener('click', ()=> { if (running) paused = !paused; });
+const speed = document.getElementById('speed'), speedVal = document.getElementById('speedVal');
+speed.addEventListener('input', () => {
+  timeScale = parseFloat(speed.value); speedVal.textContent = timeScale.toFixed(2)+'x';
+  const s = Math.hypot(ball.vx, ball.vy);
+  if (s>0){ const dirX=ball.vx/s, dirY=ball.vy/s; const target = BALL_BASE_SPEED * timeScale; ball.vx = dirX*target; ball.vy = dirY*target; }
+});
+</script>
 </body>
 </html>
